@@ -1,9 +1,17 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Container, Row, Col, Card, Button, Table, Badge, Form, ProgressBar } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
-import { AuthContext } from '../../contexts/AuthContext';
+import { AuthContext } from '../contexts/AuthContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUsers, faMoneyBillWave, faExclamationTriangle, faChartBar, faDownload, faFilter, faSearch } from '@fortawesome/free-solid-svg-icons';
+import { 
+  faUsers, 
+  faMoneyBillWave, 
+  faExclamationTriangle, 
+  faChartBar, 
+  faDownload, 
+  faFilter, 
+  faSearch 
+} from '@fortawesome/free-solid-svg-icons';
 import { Chart } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -18,6 +26,8 @@ import {
   ArcElement,
   Filler
 } from 'chart.js';
+import { formatCurrency, formatDateTime } from '../utils/helpers';
+import { adminService } from '../services/adminService';
 
 // Register ChartJS components
 ChartJS.register(
@@ -33,11 +43,163 @@ ChartJS.register(
   Filler
 );
 
+// Mock data for payment summary
+const mockPaymentSummary = {
+  totalCollected: 7250000,
+  pendingAmount: 1850000,
+  overdueAmount: 950000,
+  totalStudents: 2500,
+  paidStudents: 1875,
+  pendingStudents: 625,
+  overdueStudents: 320,
+  collectionRate: 75
+};
+
+// Mock data for monthly trends
+const mockMonthlyTrends = [
+  { month: 'Jan', collected: 980000, target: 1200000 },
+  { month: 'Feb', collected: 1150000, target: 1200000 },
+  { month: 'Mar', collected: 1250000, target: 1200000 },
+  { month: 'Apr', collected: 950000, target: 1200000 },
+  { month: 'May', collected: 1100000, target: 1200000 },
+  { month: 'Jun', collected: 1320000, target: 1200000 }
+];
+
+// Mock data for recent payments
+const mockRecentPayments = [
+  {
+    id: 'SVIT25032001',
+    studentName: 'Ravi Kumar',
+    rollNumber: 'SVIT20CS101',
+    feeType: 'Examination Fee',
+    amount: 2500,
+    date: '2025-03-20 09:45:23',
+    mode: 'Online (UPI)',
+    status: 'success'
+  },
+  {
+    id: 'SVIT25031902',
+    studentName: 'Priya Sharma',
+    rollNumber: 'SVIT21ECE078',
+    feeType: 'Bus Fee',
+    amount: 8000,
+    date: '2025-03-19 14:23:10',
+    mode: 'Online (Card)',
+    status: 'success'
+  },
+  {
+    id: 'SVIT25031903',
+    studentName: 'Mohammed Ali',
+    rollNumber: 'SVIT22ME045',
+    feeType: 'Lab Fee',
+    amount: 3500,
+    date: '2025-03-19 11:05:47',
+    mode: 'Cash',
+    status: 'success'
+  },
+  {
+    id: 'SVIT25031904',
+    studentName: 'Kiran Reddy',
+    rollNumber: 'SVIT20CS087',
+    feeType: 'Hostel Fee',
+    amount: 25000,
+    date: '2025-03-19 10:15:30',
+    mode: 'Online (Net Banking)',
+    status: 'success'
+  },
+  {
+    id: 'SVIT25031905',
+    studentName: 'Anjali Patel',
+    rollNumber: 'SVIT21CIVIL034',
+    feeType: 'Library Fee',
+    amount: 1000,
+    date: '2025-03-19 09:05:12',
+    mode: 'Cash',
+    status: 'pending'
+  }
+];
+
+// Mock data for fee type distribution
+const feeDistributionData = {
+  labels: ['Tuition Fee', 'Hostel Fee', 'Bus Fee', 'Exam Fee', 'Library Fee', 'Lab Fee'],
+  datasets: [
+    {
+      data: [45, 20, 15, 10, 5, 5],
+      backgroundColor: [
+        'rgba(75, 192, 192, 0.7)',
+        'rgba(255, 159, 64, 0.7)',
+        'rgba(54, 162, 235, 0.7)',
+        'rgba(255, 206, 86, 0.7)',
+        'rgba(153, 102, 255, 0.7)',
+        'rgba(255, 99, 132, 0.7)'
+      ],
+      borderColor: [
+        'rgba(75, 192, 192, 1)',
+        'rgba(255, 159, 64, 1)',
+        'rgba(54, 162, 235, 1)',
+        'rgba(255, 206, 86, 1)',
+        'rgba(153, 102, 255, 1)',
+        'rgba(255, 99, 132, 1)'
+      ],
+      borderWidth: 1
+    }
+  ]
+};
+
+// Mock data for department wise collection
+const departmentData = {
+  labels: ['CSE', 'ECE', 'MECH', 'CIVIL', 'EEE'],
+  datasets: [
+    {
+      label: 'Collection (in Lakhs)',
+      data: [225, 180, 150, 120, 140],
+      backgroundColor: [
+        'rgba(54, 162, 235, 0.7)',
+        'rgba(75, 192, 192, 0.7)',
+        'rgba(255, 159, 64, 0.7)',
+        'rgba(153, 102, 255, 0.7)',
+        'rgba(255, 99, 132, 0.7)'
+      ],
+      borderColor: [
+        'rgba(54, 162, 235, 1)',
+        'rgba(75, 192, 192, 1)',
+        'rgba(255, 159, 64, 1)',
+        'rgba(153, 102, 255, 1)',
+        'rgba(255, 99, 132, 1)'
+      ],
+      borderWidth: 1
+    }
+  ]
+};
+
+// Mock data for year wise payment status
+const mockYearData = [
+  { year: '1st Year', students: 625, amount: 4000000 },
+  { year: '2nd Year', students: 600, amount: 3800000 },
+  { year: '3rd Year', students: 580, amount: 3500000 },
+  { year: '4th Year', students: 550, amount: 3200000 }
+];
+
+// Function to get status badge
+const getStatusBadge = (status) => {
+  switch(status) {
+    case 'success':
+      return <Badge bg="success">Successful</Badge>;
+    case 'pending':
+      return <Badge bg="warning" text="dark">Pending</Badge>;
+    case 'failed':
+      return <Badge bg="danger">Failed</Badge>;
+    default:
+      return <Badge bg="secondary">Unknown</Badge>;
+  }
+};
+
 const AdminDashboard = () => {
   const { currentUser } = useContext(AuthContext);
   const [dateRange, setDateRange] = useState('thisMonth');
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(false);
   
   // Chart data for monthly trends
   const monthlyTrendsData = {
@@ -60,6 +222,27 @@ const AdminDashboard = () => {
       }
     ]
   };
+
+  useEffect(() => {
+    // In a real app, this would fetch data from an API
+    const fetchDashboardData = async () => {
+      setLoading(true);
+      try {
+        // Fetch data using adminService
+        // const summary = await adminService.getDashboardSummary();
+        // const trends = await adminService.getMonthlyTrends(dateRange);
+        // const payments = await adminService.getRecentPayments(5);
+        
+        // For now, we're using mock data
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [dateRange]);
   
   return (
     <Container fluid className="py-4">
@@ -67,7 +250,7 @@ const AdminDashboard = () => {
         <Col>
           <h1 className="fs-2 fw-bold">Admin Dashboard</h1>
           <p className="text-muted">
-            Welcome back, {currentUser?.name} | Today: {new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            Welcome back, {currentUser?.name || 'Admin'} | Today: {new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
         </Col>
         <Col xs="auto">
@@ -305,7 +488,7 @@ const AdminDashboard = () => {
               </div>
             </Card.Body>
             <Card.Footer className="bg-white d-flex justify-content-between align-items-center">
-              <p className="mb-0 text-muted">Showing 5 of 245 payments</p>
+              <p className="mb-0 text-muted">Showing {mockRecentPayments.length} of 245 payments</p>
               <Button variant="link" as={Link} to="/admin/payment-tracking" className="text-decoration-none">
                 View All Payments
               </Button>
@@ -399,4 +582,3 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
-  
