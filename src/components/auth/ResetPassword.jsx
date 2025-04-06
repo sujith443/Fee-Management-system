@@ -90,7 +90,7 @@ const ResetPassword = () => {
               <Card.Body className="p-4">
                 <div className="text-center mb-4">
                   <img 
-                    src="/assets/images/logo.png" 
+                    src="https://svitatp.ac.in/public/assets/admin/images/sitesetting/664263736b243_SVIT%20LOGO.png" 
                     alt="SVIT College Logo" 
                     className="mb-3" 
                     style={{ maxHeight: '80px' }} 
@@ -132,7 +132,7 @@ const ResetPassword = () => {
             <Card.Body className="p-4">
               <div className="text-center mb-4">
                 <img 
-                  src="/assets/images/logo.png" 
+                  src="https://svitatp.ac.in/public/assets/admin/images/sitesetting/664263736b243_SVIT%20LOGO.png" 
                   alt="SVIT College Logo" 
                   className="mb-3" 
                   style={{ maxHeight: '80px' }} 

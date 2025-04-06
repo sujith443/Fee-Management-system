@@ -97,7 +97,7 @@ const AppNavbar = () => {
         <Container fluid>
           <Navbar.Brand as={Link} to={dashboardPath} className="d-flex align-items-center">
             <img 
-              src="/assets/images/logo.png" 
+              src="https://svitatp.ac.in/public/assets/admin/images/sitesetting/664263736b243_SVIT%20LOGO.png" 
               alt="SVIT Logo" 
               height="40" 
               className="me-2" 
